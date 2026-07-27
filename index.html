@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR HealthFirst</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0a0e1a;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(0, 100, 180, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 180, 120, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(10, 14, 26, 1) 0%, transparent 100%);
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* subtle grid pattern on background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── LAYOUT ── */
+        #app {
+            position: relative;
+            z-index: 1;
+            max-width: 520px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px 24px;
+            gap: 14px;
+        }
+
+        /* ── HEADER ── */
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #logo-dot {
+            width: 10px;
+            height: 10px;
+            background: #00e5ff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00e5ff;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        #app-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        #app-name span {
+            color: #00e5ff;
+        }
+
+        #nova-badge {
+            font-size: 10px;
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(0, 229, 255, 0.06);
+        }
+
+        #mode-badge {
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        #mode-badge.camera-mode {
+            color: #00e5ff;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+
+        #mode-badge.upload-mode {
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.08);
+            border: 1px solid rgba(255, 170, 0, 0.25);
+        }
+
+        /* ── VIEWFINDER CARD ── */
+        #viewfinder-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #viewfinder-label {
+            font-size: 11px;
+            color: #556;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            align-self: flex-start;
+        }
+
+        /* The camera box */
+        #camera-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #060a14;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+        }
+
+        #camera {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Corner accents on camera box */
+        #camera-box::before,
+        #camera-box::after {
+            content: '';
+            position: absolute;
+            z-index: 2;
+            width: 22px;
+            height: 22px;
+            border-color: #00e5ff;
+            border-style: solid;
+        }
+
+        #camera-box::before {
+            top: 10px;
+            left: 10px;
+            border-width: 2px 0 0 2px;
+            border-radius: 4px 0 0 0;
+        }
+
+        #camera-box::after {
+            bottom: 10px;
+            right: 10px;
+            border-width: 0 2px 2px 0;
+            border-radius: 0 0 4px 0;
+        }
+
+        /* Extra corners via a pseudo wrapper */
+        #cam-corners-tl,
+        #cam-corners-tr,
+        #cam-corners-bl,
+        #cam-corners-br {
+            position: absolute;
+            z-index: 2;
+            width: 22px;
+            height: 22px;
+            border-color: #00e5ff;
+            border-style: solid;
+            pointer-events: none;
+        }
+
+        #cam-corners-tr {
+            top: 10px;
+            right: 10px;
+            border-width: 2px 2px 0 0;
+            border-radius: 0 4px 0 0;
+        }
+
+        #cam-corners-bl {
+            bottom: 10px;
+            left: 10px;
+            border-width: 0 0 2px 2px;
+            border-radius: 0 0 0 4px;
+        }
+
+        /* Scan line animation */
+        #scan-line {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 1px;
+            background: linear-gradient(90deg,
+                    transparent, rgba(0, 229, 255, 0.8), transparent);
+            animation: scanMove 2.5s ease-in-out infinite;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        @keyframes scanMove {
+            0% {
+                top: 10%;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 90%;
+                opacity: 0;
+            }
+        }
+
+        /* Camera hint text overlay */
+        #cam-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: rgba(0, 229, 255, 0.7);
+            background: rgba(0, 0, 0, 0.45);
+            padding: 3px 12px;
+            border-radius: 10px;
+            white-space: nowrap;
+            z-index: 4;
+        }
+
+        /* Preview image inside camera box */
+        #preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            background: #060a14;
+        }
+
+        #preview-filename {
+            font-size: 11px;
+            color: #ffaa00;
+            text-align: center;
+        }
+
+        /* ── RESULT CARD ── */
+        #result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            display: none;
+        }
+
+        #result-card.safe {
+            border-color: rgba(0, 230, 118, 0.35);
+        }
+
+        #result-card.warning {
+            border-color: rgba(255, 68, 68, 0.35);
+        }
+
+        #result-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        #medicine-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        #compositions-text {
+            font-size: 11px;
+            color: #556;
+            margin-top: 3px;
+        }
+
+        #safety-pill {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        #safety-pill.safe {
+            background: rgba(0, 230, 118, 0.15);
+            color: #00e676;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+
+        #safety-pill.warning {
+            background: rgba(255, 68, 68, 0.15);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .verdict-line {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            line-height: 1.5;
+            color: #ccc;
+        }
+
+        .verdict-line:last-of-type {
+            border-bottom: none;
+        }
+
+        .verdict-line.warn-line {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .verdict-line.safe-line {
+            color: #69f0ae;
+            font-weight: 600;
+        }
+
+        .v-icon {
+            flex-shrink: 0;
+            font-size: 14px;
+            margin-top: 1px;
+        }
+
+        #interactions-section {
+            margin-top: 10px;
+            display: none;
+        }
+
+        #interactions-title {
+            font-size: 11px;
+            color: #ff9999;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .int-item {
+            background: rgba(255, 68, 68, 0.08);
+            border: 1px solid rgba(255, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #ffaaaa;
+        }
+
+        .sev-badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 6px;
+        }
+
+        .sev-severe {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
+        }
+
+        .sev-moderate {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffaa00;
+        }
+
+        .sev-low {
+            background: rgba(0, 200, 100, 0.15);
+            color: #00e676;
+        }
+
+        #patient-footer {
+            font-size: 11px;
+            color: #334;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ── MEDICINES PANEL ── */
+        #meds-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px;
+            display: none;
+        }
+
+        #meds-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #meds-title {
+            font-size: 12px;
+            color: #00e5ff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #clear-btn {
+            font-size: 11px;
+            color: #ff6b6b;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.25);
+            border-radius: 8px;
+            padding: 3px 10px;
+            cursor: pointer;
+        }
+
+        #meds-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 28px;
+            margin-bottom: 10px;
+        }
+
+        .med-tag {
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            color: #00e5ff;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .med-tag .remove {
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 15px;
+            line-height: 1;
+        }
+
+        .no-meds {
+            font-size: 12px;
+            color: #334;
+        }
+
+        #med-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        #med-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        #med-input:focus {
+            border-color: rgba(0, 229, 255, 0.4);
+        }
+
+        #med-input::placeholder {
+            color: #334;
+        }
+
+        #add-med-btn {
+            padding: 8px 16px;
+            background: #00e5ff;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── STATUS ── */
+        #status-area {
+            text-align: center;
+            display: none;
+        }
+
+        #loading-text {
+            color: #00e5ff;
+            font-size: 14px;
+            animation: pulse 1.2s infinite;
+        }
+
+        #loading-sub {
+            color: #334;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        #error-msg {
+            background: rgba(255, 0, 0, 0.08);
+            border: 1px solid rgba(255, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            color: #ff6b6b;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+
+        /* ── BUTTONS ── */
+        #btn-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        #scan-btn {
+            flex: 2;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            background: #00e5ff;
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        #scan-btn:active {
+            transform: scale(0.97);
+        }
+
+        #scan-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        #upload-btn {
+            flex: 1;
+            padding: 15px;
+            font-size: 13px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #upload-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        #meds-toggle {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: #445;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        #meds-toggle:hover {
+            color: #00e5ff;
+            border-color: rgba(0, 229, 255, 0.2);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- HEADER -->
+        <div id="header">
+            <div id="logo-area">
+                <div id="logo-dot"></div>
+                <div id="app-name">AR <span>HealthFirst</span></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <div id="nova-badge">Amazon Nova</div>
+                <div id="mode-badge" class="camera-mode">LIVE CAM</div>
+            </div>
+        </div>
+
+        <!-- VIEWFINDER -->
+        <div id="viewfinder-card">
+            <div id="viewfinder-label">Viewfinder</div>
+
+            <div id="camera-box">
+                <video id="camera" autoplay playsinline muted></video>
+                <img id="preview-img" src="" alt="preview">
+                <div id="cam-corners-tr"></div>
+                <div id="cam-corners-bl"></div>
+                <div id="scan-line"></div>
+                <div id="cam-hint">Point at medicine label and tap Scan</div>
+            </div>
+
+            <div id="preview-filename" style="display:none"></div>
+        </div>
+
+        <!-- RESULT CARD -->
+        <div id="result-card">
+            <div id="result-header">
+                <div>
+                    <div id="medicine-name"></div>
+                    <div id="compositions-text"></div>
+                </div>
+                <div id="safety-pill" class="safe">SAFE</div>
+            </div>
+            <div id="verdict-lines"></div>
+            <div id="interactions-section">
+                <div id="interactions-title"></div>
+                <div id="interactions-body"></div>
+            </div>
+            <div id="patient-footer"></div>
+        </div>
+
+        <!-- STATUS -->
+        <div id="status-area">
+            <div id="loading-text">Analyzing with Amazon Nova...</div>
+            <div id="loading-sub">Reading composition · Checking interactions</div>
+        </div>
+        <div id="error-msg"></div>
+
+        <!-- BUTTONS -->
+        <div id="btn-row">
+            <button id="upload-btn" onclick="document.getElementById('file-input').click()">
+                Upload Image
+            </button>
+            <button id="scan-btn" onclick="captureAndAnalyze()">
+                Scan with Camera
+            </button>
+        </div>
+        <!-- Prescription Scanner Button -->
+        <button id="rx-btn" onclick="document.getElementById('rx-input').click()" style="
+            width: 100%; padding: 12px;
+            background: rgba(255,180,0,0.08);
+            color: #ffb300;
+            border: 1px solid rgba(255,180,0,0.25);
+            border-radius: 14px; font-size: 14px;
+            font-weight: 700; cursor: pointer;
+            display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+            margin-top: -4px;
+        ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffb300" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+            </svg>
+            Scan Full Prescription
+        </button>
+        <input type="file" id="rx-input" accept="image/*" onchange="handlePrescription(event)" style="display:none">
+
+        <!-- Prescription Result Panel -->
+        <div id="rx-panel" style="display:none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,180,0,0.2);
+            border-radius: 16px; padding: 16px;
+        ">
+            <div style="display:flex; justify-content:space-between;
+                align-items:center; margin-bottom:12px;">
+                <div style="font-size:12px; color:#ffb300; font-weight:700;
+                    text-transform:uppercase; letter-spacing:0.5px;">
+                    Prescription Analysis
+                </div>
+                <button onclick="document.getElementById('rx-panel').style.display='none'" style="color:#556; background:none; border:none;
+                    cursor:pointer; font-size:18px; line-height:1;">×</button>
+            </div>
+            <div id="rx-loading" style="display:none;
+                text-align:center; color:#ffb300; font-size:13px;
+                padding:10px; animation: pulse 1.2s infinite;">
+                Nova is reading your prescription...
+            </div>
+            <div id="rx-body"></div>
+        </div>
+        <input type="file" id="file-input" accept="image/*" onchange="handleUpload(event)">
+
+        <!-- MEDICINES PANEL TOGGLE -->
+        <button id="meds-toggle" onclick="toggleMeds()">
+            Manage Patient Medicines
+        </button>
+
+        <!-- History Toggle Button -->
+        <button id="history-toggle" onclick="toggleHistory()" style="
+            width: 100%; padding: 10px;
+            background: transparent;
+            color: #445; font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px; cursor: pointer;
+            transition: color 0.2s; margin-top: -4px;
+        ">
+            View Scan History
+        </button>
+
+        <!-- History Panel -->
+        <div id="history-panel" style="display:none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; padding: 16px;
+        ">
+            <div style="display:flex; justify-content:space-between;
+                align-items:center; margin-bottom:14px;">
+                <div style="font-size:12px; color:#00e5ff; font-weight:700;
+                    text-transform:uppercase; letter-spacing:0.5px;">
+                    Scan History
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="exportHistory()" style="
+                        font-size:11px; color:#aaa;
+                        background: rgba(255,255,255,0.05);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        border-radius:8px; padding:3px 10px; cursor:pointer;
+                    ">Export</button>
+                    <button onclick="clearHistory()" style="
+                        font-size:11px; color:#ff6b6b;
+                        background: rgba(255,68,68,0.08);
+                        border: 1px solid rgba(255,68,68,0.2);
+                        border-radius:8px; padding:3px 10px; cursor:pointer;
+                    ">Clear All</button>
+                </div>
+            </div>
+            <div id="history-body">
+                <div style="color:#334; font-size:12px; text-align:center;
+                    padding:20px 0;">
+                    No scans yet. Scan a medicine to see history here.
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Button -->
+        <button id="schedule-toggle" onclick="toggleSchedule()" style="
+            width: 100%; padding: 10px;
+            background: transparent;
+            color: #445; font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px; cursor: pointer;
+            transition: color 0.2s; margin-top: -4px;
+        ">
+            Generate Daily Medicine Schedule
+        </button>
+
+        <!-- Schedule Panel -->
+        <div id="schedule-panel" style="display:none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; padding: 16px;
+        ">
+            <div style="display:flex; justify-content:space-between;
+            align-items:center; margin-bottom:14px;">
+                <div style="font-size:12px; color:#00e5ff; font-weight:700;
+            text-transform:uppercase; letter-spacing:0.5px;">
+                    Daily Medicine Schedule
+                </div>
+                <button onclick="loadSchedule()" style="
+            font-size:11px; color:#00e5ff;
+            background: rgba(0,229,255,0.08);
+            border: 1px solid rgba(0,229,255,0.2);
+            border-radius:8px; padding:3px 10px; cursor:pointer;
+            ">Regenerate</button>
+            </div>
+
+            <div id="schedule-loading" style="
+            display:none; text-align:center;
+            color:#00e5ff; font-size:13px; padding:10px;
+            animation: pulse 1.2s infinite;
+            ">Nova is building your schedule...</div>
+
+            <div id="schedule-error" style="
+            display:none; color:#ff6b6b;
+            font-size:12px; text-align:center; padding:8px;
+            "></div>
+
+            <div id="schedule-body"></div>
+        </div>
+
+        <!-- MEDICINES PANEL -->
+        <div id="meds-panel">
+            <div id="meds-header">
+                <div id="meds-title">Current Medicines</div>
+                <button id="clear-btn" onclick="clearMeds()">Clear All</button>
+            </div>
+            <div id="meds-tags"></div>
+            <div id="med-input-row">
+                <input id="med-input" type="text" placeholder="Type medicine name..."
+                    onkeydown="if(event.key==='Enter') addMed()">
+                <button id="add-med-btn" onclick="addMed()">Add</button>
+            </div>
+        </div>
+
+    </div><!-- end #app -->
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const API = "http://127.0.0.1:8000";
+        let uploadedBlob = null;
+
+        /* ── CAMERA ── */
+        async function startCamera() {
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280 }, height: { ideal: 720 }
+                    }
+                });
+                document.getElementById("camera").srcObject = s;
+            } catch (e) {
+                try {
+                    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+                    document.getElementById("camera").srcObject = s;
+                } catch (err) {
+                    document.getElementById("cam-hint").textContent =
+                        "Camera unavailable — use Upload Image";
+                }
+            }
+        }
+
+        /* ── FILE UPLOAD ── */
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            uploadedBlob = file;
+
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const cam = document.getElementById("camera");
+                const pre = document.getElementById("preview-img");
+                cam.style.display = "none";
+                pre.src = ev.target.result;
+                pre.style.display = "block";
+                document.getElementById("cam-hint").style.display = "none";
+                document.getElementById("preview-filename").style.display = "block";
+                document.getElementById("preview-filename").textContent =
+                    file.name + " — ready";
+            };
+            reader.readAsDataURL(file);
+
+            document.getElementById("mode-badge").className = "upload-mode";
+            document.getElementById("mode-badge").textContent = "UPLOAD";
+            document.getElementById("scan-btn").textContent = "Analyze Image";
+            document.getElementById("result-card").style.display = "none";
+            document.getElementById("error-msg").style.display = "none";
+            e.target.value = "";
+        }
+
+        /* ── MAIN ANALYZE ── */
+        async function captureAndAnalyze() {
+            const btn = document.getElementById("scan-btn");
+            const status = document.getElementById("status-area");
+            const errEl = document.getElementById("error-msg");
+
+            errEl.style.display = "none";
+            document.getElementById("result-card").style.display = "none";
+            btn.disabled = true;
+            btn.textContent = "Analyzing...";
+            status.style.display = "block";
+
+            try {
+                let blob;
+                if (uploadedBlob) {
+                    blob = uploadedBlob;
+                } else {
+                    const video = document.getElementById("camera");
+                    const canvas = document.getElementById("canvas");
+                    canvas.width = video.videoWidth || 1280;
+                    canvas.height = video.videoHeight || 720;
+                    canvas.getContext("2d").drawImage(video, 0, 0);
+                    blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.93));
+                }
+
+                const fd = new FormData();
+                fd.append("image", blob, "scan.jpg");
+                fd.append("patient_id", "demo_user");
+
+                const res = await fetch(`${API}/analyze`, { method: "POST", body: fd });
+                if (!res.ok) throw new Error(`Server error ${res.status}`);
+                const data = await res.json();
+                showResult(data);
+
+                // reset to camera mode
+                uploadedBlob = null;
+                document.getElementById("camera").style.display = "block";
+                document.getElementById("preview-img").style.display = "none";
+                document.getElementById("cam-hint").style.display = "block";
+                document.getElementById("preview-filename").style.display = "none";
+                document.getElementById("mode-badge").className = "camera-mode";
+                document.getElementById("mode-badge").textContent = "LIVE CAM";
+                btn.textContent = "Scan with Camera";
+
+                // refresh meds panel if open
+                if (document.getElementById("meds-panel").style.display !== "none")
+                    loadMeds();
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                status.style.display = "none";
+                btn.disabled = false;
+            }
+        }
+
+        /* ── DISPLAY RESULT ── */
+        function showResult(data) {
+            const card = document.getElementById("result-card");
+            const v = data.verdict;
+            const label = data.label;
+            const warn = v.has_warning;
+            const comps = data.compositions_detected || [];
+            const ints = data.interactions || [];
+
+            document.getElementById("medicine-name").textContent =
+                label.medicine_name || "Medicine Detected";
+            document.getElementById("compositions-text").textContent =
+                "Ingredients: " + (comps.length ? comps.join(", ") : "unknown");
+
+            const pill = document.getElementById("safety-pill");
+            pill.textContent = warn ? "WARNING" : "SAFE";
+            pill.className = warn ? "warning" : "safe";
+
+            const linesDiv = document.getElementById("verdict-lines");
+            linesDiv.innerHTML = "";
+            [
+                { icon: "💊", text: v.line1, cls: "verdict-line" },
+                {
+                    icon: warn ? "⚠️" : "✅", text: v.line2,
+                    cls: `verdict-line ${warn ? "warn-line" : "safe-line"}`
+                },
+                { icon: "📌", text: v.line3, cls: "verdict-line" }
+            ].forEach(({ icon, text, cls }) => {
+                const d = document.createElement("div");
+                d.className = cls;
+                d.innerHTML = `<span class="v-icon">${icon}</span><span>${text}</span>`;
+                linesDiv.appendChild(d);
+            });
+
+            const intSec = document.getElementById("interactions-section");
+            const intBody = document.getElementById("interactions-body");
+            intBody.innerHTML = "";
+            if (ints.length > 0) {
+                intSec.style.display = "block";
+                document.getElementById("interactions-title").textContent =
+                    `${ints.length} interaction(s) detected`;
+                ints.forEach(i => {
+                    const el = document.createElement("div");
+                    el.className = "int-item";
+                    el.innerHTML =
+                        `<strong>${i.ingredient}</strong> + <strong>${i.conflicts_with}</strong>
+         <span class="sev-badge sev-${i.severity}">${i.severity}</span>
+         <br><span style="color:#cc8">${i.description}</span>`;
+                    intBody.appendChild(el);
+                });
+            } else {
+                intSec.style.display = "none";
+            }
+
+            document.getElementById("patient-footer").textContent =
+                "Patient takes: " +
+                (data.current_medicines.length
+                    ? data.current_medicines.join(", ")
+                    : "none recorded");
+
+            card.className = warn ? "warning" : "safe";
+            addVoiceButton(card, v);
+            addWhatsAppAlert(card, ints, label);
+            saveToHistory(label, comps, ints, v);
+            card.style.display = "block";
+        }
+
+        /* ── VOICE VERDICT ── */
+        function addVoiceButton(card, verdict) {
+            const wrapper = document.createElement("div");
+            wrapper.style.cssText = `
+                margin-top: 12px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.07);
+                border-radius: 12px;
+                padding: 10px 12px;
+            `;
+
+            // Language selector
+            const langRow = document.createElement("div");
+            langRow.style.cssText = `
+                display: flex; gap: 6px;
+                margin-bottom: 10px; align-items: center;
+            `;
+            langRow.innerHTML = `
+                <span style="font-size:11px; color:#556; flex-shrink:0;">
+                    Language:
+                </span>
+            `;
+
+            const langs = [
+                { value: "english", label: "English" },
+                { value: "hindi", label: "हिंदी" },
+                { value: "telugu", label: "తెలుగు" }
+            ];
+
+            let selectedLang = "english";
+
+            langs.forEach(({ value, label }) => {
+                const btn = document.createElement("button");
+                btn.textContent = label;
+                btn.dataset.lang = value;
+                btn.style.cssText = `
+                    padding: 4px 10px; font-size: 12px;
+                    border-radius: 20px; cursor: pointer;
+                    border: 1px solid rgba(255,255,255,0.15);
+                    background: ${value === "english"
+                        ? "rgba(0,229,255,0.15)"
+                        : "transparent"};
+                    color: ${value === "english" ? "#00e5ff" : "#556"};
+                    transition: all 0.2s;
+                `;
+                btn.onclick = () => {
+                    selectedLang = value;
+                    langRow.querySelectorAll("button").forEach(b => {
+                        b.style.background = b.dataset.lang === value
+                            ? "rgba(0,229,255,0.15)" : "transparent";
+                        b.style.color = b.dataset.lang === value
+                            ? "#00e5ff" : "#556";
+                    });
+                };
+                langRow.appendChild(btn);
+            });
+
+            // Speak button
+            const speakBtn = document.createElement("button");
+            speakBtn.style.cssText = `
+                width: 100%; padding: 11px;
+                background: rgba(150,80,255,0.12);
+                color: #bb88ff;
+                border: 1px solid rgba(150,80,255,0.25);
+                border-radius: 10px; font-size: 13px;
+                cursor: pointer; font-weight: 700;
+                display: flex; align-items: center;
+                justify-content: center; gap: 8px;
+                transition: background 0.2s;
+            `;
+            speakBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="#bb88ff" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                Speak Verdict Aloud
+            `;
+
+            let currentAudio = null;
+
+            speakBtn.onclick = async () => {
+                // Stop any currently playing audio
+                if (currentAudio) {
+                    try { currentAudio.stop(); } catch (e) { }
+                    currentAudio = null;
+                    speakBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="#bb88ff" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                        Speak Verdict Aloud
+                    `;
+                    return;
+                }
+
+                speakBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="#bb88ff" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="10" y1="15" x2="10" y2="9"/>
+                        <line x1="14" y1="15" x2="14" y2="9"/>
+                    </svg>
+                    Speaking... (tap to stop)
+                `;
+
+                try {
+                    const params = new URLSearchParams({
+                        line1: verdict.line1 || "",
+                        line2: verdict.line2 || "",
+                        line3: verdict.line3 || "",
+                        language: selectedLang
+                    });
+
+                    const res = await fetch(
+                        `${API}/speak-verdict?${params}`,
+                        { method: "POST" }
+                    );
+
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error("Voice error: " + errText);
+                    }
+
+                    // Check content type — if JSON it means backend error
+                    const contentType = res.headers.get("content-type") || "";
+                    if (contentType.includes("application/json")) {
+                        const errData = await res.json();
+                        throw new Error(errData.error || "Voice service failed");
+                    }
+
+                    const arrayBuffer = await res.arrayBuffer();
+                    const audioContext = new (window.AudioContext
+                        || window.webkitAudioContext)();
+
+                    audioContext.decodeAudioData(arrayBuffer, (buffer) => {
+                        const source = audioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(audioContext.destination);
+
+                        source.onended = () => {
+                            currentAudio = null;
+                            speakBtn.innerHTML = `
+                                <svg width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="#bb88ff" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
+                                Speak Verdict Aloud
+                            `;
+                        };
+
+                        // Store source so we can stop it
+                        currentAudio = source;
+                        source.start(0);
+
+                    }, (err) => {
+                        throw new Error("Audio decode failed: " + err);
+                    });
+
+                } catch (err) {
+                    // Fallback to browser TTS if Nova Sonic unavailable
+                    speakBtn.textContent = "Using browser voice...";
+                    const utterance = new SpeechSynthesisUtterance(
+                        `${verdict.line1}. ${verdict.line2}. Remember: ${verdict.line3}`
+                    );
+                    utterance.lang = selectedLang === "hindi"
+                        ? "hi-IN"
+                        : selectedLang === "telugu"
+                            ? "te-IN"
+                            : "en-US";
+                    utterance.rate = 0.85;
+                    utterance.onend = () => {
+                        speakBtn.innerHTML = `
+                                <svg width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="#bb88ff" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
+                                Speak Verdict Aloud
+                            `;
+                    };
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+
+            wrapper.appendChild(langRow);
+            wrapper.appendChild(speakBtn);
+            card.appendChild(wrapper);
+        };
+
+        function addWhatsAppAlert(card, ints, label) {
+            const severe = ints.filter(i => i.severity === "severe");
+            if (severe.length === 0) return;
+
+            const btn = document.createElement("button");
+            btn.style.cssText = `
+                width: 100%; margin-top: 10px; padding: 12px;
+                background: rgba(37,211,102,0.1);
+                color: #25d366;
+                border: 1px solid rgba(37,211,102,0.3);
+                border-radius: 10px; font-size: 13px;
+                cursor: pointer; font-weight: 700;
+                display: flex; align-items: center;
+                justify-content: center; gap: 8px;
+            `;
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15
+                -.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075
+                -.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059
+                -.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52
+                .149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52
+                -.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51
+                -.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372
+                -.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074
+                .149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625
+                .712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413
+                .248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.856L0 24l6.335-1.51
+                A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.882
+                a9.877 9.877 0 01-5.031-1.378l-.361-.214-3.741.982.999-3.648
+                -.235-.374A9.86 9.86 0 012.118 12C2.118 6.927 6.927 2.118 12 2.118
+                c5.072 0 9.882 4.809 9.882 9.882 0 5.072-4.81 9.882-9.882 9.882z"/>
+                </svg>
+                Alert Caregiver on WhatsApp
+            `;
+
+            const medName = label.medicine_name || "this medicine";
+            const warnings = severe.map(i =>
+                `SEVERE: ${i.ingredient} + ${i.conflicts_with}\n${i.description}`
+            ).join("\n\n");
+
+            const msg =
+                `MEDICINE SAFETY ALERT\n\n` +
+                `Medicine scanned: ${medName}\n\n` +
+                `${warnings}\n\n` +
+                `Please consult a doctor immediately before taking this medicine.\n\n` +
+                `Sent via AR HealthFirst`;
+
+            btn.onclick = () => {
+                window.open(
+                    `https://wa.me/?text=${encodeURIComponent(msg)}`,
+                    "_blank"
+                );
+            };
+
+            card.appendChild(btn);
+        }
+
+        /* ── ERROR ── */
+        function showError(msg) {
+            const e = document.getElementById("error-msg");
+            e.textContent = "Error: " + msg;
+            e.style.display = "block";
+            document.getElementById("scan-btn").disabled = false;
+            document.getElementById("scan-btn").textContent = "Try Again";
+        }
+
+        /* ── MEDICINES MANAGER ── */
+        async function loadMeds() {
+            try {
+                const res = await fetch(`${API}/profile/demo_user`);
+                const data = await res.json();
+                renderTags(data.medicines || []);
+            } catch (e) { }
+        }
+
+        function renderTags(meds) {
+            const box = document.getElementById("meds-tags");
+            box.innerHTML = "";
+            if (!meds.length) {
+                box.innerHTML = '<span class="no-meds">No medicines added yet</span>';
+                return;
+            }
+            meds.forEach(m => {
+                const t = document.createElement("div");
+                t.className = "med-tag";
+                t.innerHTML =
+                    `${m} <span class="remove"
+         onclick="removeMed('${m}')">×</span>`;
+                box.appendChild(t);
+            });
+        }
+
+        async function addMed() {
+            const inp = document.getElementById("med-input");
+            const med = inp.value.trim();
+            if (!med) return;
+            const res = await fetch(
+                `${API}/add-medicine?patient_id=demo_user&medicine=${encodeURIComponent(med)}`,
+                { method: "POST" }
+            );
+            const data = await res.json();
+            renderTags(data.medicines);
+            inp.value = "";
+        }
+
+        async function removeMed(med) {
+            const res = await fetch(
+                `${API}/remove-medicine?patient_id=demo_user&medicine=${encodeURIComponent(med)}`,
+                { method: "POST" }
+            );
+            const data = await res.json();
+            renderTags(data.medicines);
+        }
+
+        async function clearMeds() {
+            const res = await fetch(
+                `${API}/clear-medicines?patient_id=demo_user`,
+                { method: "POST" }
+            );
+            const data = await res.json();
+            renderTags(data.medicines);
+        }
+
+        function toggleMeds() {
+            const panel = document.getElementById("meds-panel");
+            const btn = document.getElementById("meds-toggle");
+            const open = panel.style.display !== "none";
+            panel.style.display = open ? "none" : "block";
+            btn.textContent = open
+                ? "Manage Patient Medicines"
+                : "Hide Medicines Panel";
+            if (!open) loadMeds();
+        }
+
+        startCamera();
+        loadMeds();
+
+        /* ── SCHEDULE GENERATOR ── */
+        async function loadSchedule() {
+            const body = document.getElementById("schedule-body");
+            const loading = document.getElementById("schedule-loading");
+            const errEl = document.getElementById("schedule-error");
+
+            body.innerHTML = "";
+            errEl.style.display = "none";
+            loading.style.display = "block";
+
+            try {
+                const res = await fetch(`${API}/generate-schedule?patient_id=demo_user`);
+                const data = await res.json();
+
+                loading.style.display = "none";
+
+                if (!data.schedule) {
+                    errEl.textContent = data.message || "No medicines found. Scan strips first.";
+                    errEl.style.display = "block";
+                    return;
+                }
+
+                const slots = [
+                    { key: "morning", icon: "🌅", label: "Morning" },
+                    { key: "afternoon", icon: "☀️", label: "Afternoon" },
+                    { key: "evening", icon: "🌆", label: "Evening" },
+                    { key: "night", icon: "🌙", label: "Night" }
+                ];
+
+                slots.forEach(({ key, icon, label }) => {
+                    const slot = data.schedule[key];
+                    if (!slot) return;
+
+                    const card = document.createElement("div");
+                    card.style.cssText = `
+                        background: rgba(255,255,255,0.04);
+                        border: 1px solid rgba(255,255,255,0.07);
+                        border-radius: 10px; padding: 10px 12px;
+                        margin-bottom: 8px;
+                    `;
+
+                    const hasMeds = slot.medicines && slot.medicines.length > 0;
+
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between;
+                        align-items:center; margin-bottom:6px;">
+                        <div style="font-size:13px; font-weight:700; color:#fff;">
+                            ${icon} ${label}
+                            <span style="font-size:11px; color:#556;
+                            font-weight:400; margin-left:6px;">${slot.time}</span>
+                        </div>
+                        ${hasMeds
+                            ? `<span style="font-size:10px; background:rgba(0,229,255,0.1);
+                                color:#00e5ff; border:1px solid rgba(0,229,255,0.2);
+                                border-radius:20px; padding:2px 8px;">
+                                ${slot.medicines.length} medicine${slot.medicines.length > 1 ? "s" : ""}
+                            </span>`
+                            : `<span style="font-size:10px; color:#334;">nothing</span>`
+                        }
+                        </div>
+                        ${hasMeds
+                            ? slot.medicines.map(m => `
+                                <div style="font-size:12px; color:#aaa; padding:3px 0;
+                                border-bottom:1px solid rgba(255,255,255,0.04);
+                                display:flex; align-items:center; gap:6px;">
+                                <span style="color:#00e5ff; font-size:10px;">▸</span>${m}
+                                </div>`).join("")
+                            : ""
+                        }
+                        ${slot.note
+                            ? `<div style="font-size:11px; color:#556; margin-top:6px;
+                                font-style:italic;">Tip: ${slot.note}</div>`
+                            : ""
+                        }
+                    `;
+
+                    body.appendChild(card);
+                });
+
+                // Add export button
+                const exportBtn = document.createElement("button");
+                exportBtn.textContent = "Copy Schedule as Text";
+                exportBtn.style.cssText = `
+                    width:100%; margin-top:8px; padding:10px;
+                    background: rgba(255,255,255,0.04);
+                    color:#888; border:1px solid rgba(255,255,255,0.08);
+                    border-radius:10px; font-size:12px; cursor:pointer;
+                `;
+                exportBtn.onclick = () => exportSchedule(data.schedule, data.medicines);
+                body.appendChild(exportBtn);
+
+            } catch (err) {
+                loading.style.display = "none";
+                errEl.textContent = "Error: " + err.message;
+                errEl.style.display = "block";
+            }
+        }
+
+        function exportSchedule(schedule, medicines) {
+            const slots = ["morning", "afternoon", "evening", "night"];
+            const labels = {
+                morning: "Morning (8AM)", afternoon: "Afternoon (2PM)",
+                evening: "Evening (6PM)", night: "Night (10PM)"
+            };
+            let text = "MY DAILY MEDICINE SCHEDULE\n";
+            text += "Generated by AR HealthFirst\n";
+            text += "Medicines: " + medicines.join(", ") + "\n\n";
+            slots.forEach(s => {
+                const slot = schedule[s];
+                if (!slot) return;
+                text += `${labels[s]}:\n`;
+                if (slot.medicines && slot.medicines.length > 0) {
+                    slot.medicines.forEach(m => text += `  • ${m}\n`);
+                } else {
+                    text += "  • Nothing at this time\n";
+                }
+                if (slot.note) text += `  Tip: ${slot.note}\n`;
+                text += "\n";
+            });
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Schedule copied to clipboard!");
+            });
+        }
+
+        function toggleSchedule() {
+            const panel = document.getElementById("schedule-panel");
+            const btn = document.getElementById("schedule-toggle");
+            const open = panel.style.display !== "none";
+            panel.style.display = open ? "none" : "block";
+            btn.textContent = open
+                ? "Generate Daily Medicine Schedule"
+                : "Hide Schedule";
+            btn.style.color = open ? "#445" : "#00e5ff";
+            if (!open) loadSchedule();
+        }
+
+        /* ── PRESCRIPTION SCANNER ── */
+        async function handlePrescription(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const panel = document.getElementById("rx-panel");
+            const loading = document.getElementById("rx-loading");
+            const body = document.getElementById("rx-body");
+            const btn = document.getElementById("rx-btn");
+
+            panel.style.display = "block";
+            loading.style.display = "block";
+            body.innerHTML = "";
+            btn.textContent = "Scanning...";
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append("image", file, "prescription.jpg");
+                formData.append("patient_id", "demo_user");
+
+                const res = await fetch(`${API}/scan-prescription`, {
+                    method: "POST", body: formData
+                });
+                const data = await res.json();
+
+                loading.style.display = "none";
+                renderPrescription(data, body);
+
+                // Refresh medicines panel if open
+                if (document.getElementById("meds-panel").style.display !== "none") {
+                    loadMeds();
+                }
+
+            } catch (err) {
+                loading.style.display = "none";
+                body.innerHTML = `<div style="color:#ff6b6b;font-size:13px;">
+                    Error: ${err.message}</div>`;
+            } finally {
+                btn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="#ffb300" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Scan Full Prescription`;
+                btn.disabled = false;
+                event.target.value = "";
+            }
+        }
+
+        function renderPrescription(data, body) {
+            const rx = data.prescription || {};
+            const meds = rx.medicines || [];
+            const ints = data.cross_interactions || [];
+
+            // Header info
+            if (rx.doctor_name || rx.patient_name || rx.date) {
+                const info = document.createElement("div");
+                info.style.cssText = `
+                    font-size:11px; color:#556;
+                    margin-bottom:10px; padding-bottom:8px;
+                    border-bottom:1px solid rgba(255,255,255,0.05);
+                `;
+                info.innerHTML = [
+                    rx.doctor_name ? `Doctor: ${rx.doctor_name}` : null,
+                    rx.patient_name ? `Patient: ${rx.patient_name}` : null,
+                    rx.date ? `Date: ${rx.date}` : null
+                ].filter(Boolean).join(" &nbsp;·&nbsp; ");
+                body.appendChild(info);
+            }
+
+            // Summary badge
+            const summary = document.createElement("div");
+            summary.style.cssText = `
+                display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+            `;
+            summary.innerHTML = `
+                <span style="background:rgba(255,180,0,0.1);color:#ffb300;
+                    border:1px solid rgba(255,180,0,0.2);border-radius:20px;
+                    padding:3px 10px;font-size:11px;font-weight:700;">
+                    ${meds.length} medicine${meds.length !== 1 ? "s" : ""} found
+                </span>
+                <span style="background:rgba(0,229,255,0.1);color:#00e5ff;
+                    border:1px solid rgba(0,229,255,0.2);border-radius:20px;
+                    padding:3px 10px;font-size:11px;font-weight:700;">
+                    ${data.medicines_added.length} added to profile
+                </span>
+                ${ints.length > 0
+                    ? `<span style="background:rgba(255,68,68,0.1);color:#ff4444;
+                        border:1px solid rgba(255,68,68,0.2);border-radius:20px;
+                        padding:3px 10px;font-size:11px;font-weight:700;">
+                        ${ints.length} interaction${ints.length !== 1 ? "s" : ""} detected
+                    </span>`
+                    : `<span style="background:rgba(0,230,118,0.1);color:#00e676;
+                        border:1px solid rgba(0,230,118,0.2);border-radius:20px;
+                        padding:3px 10px;font-size:11px;font-weight:700;">
+                        No interactions
+                    </span>`
+                }
+                body.appendChild(summary);
+
+                // Medicines list
+                meds.forEach(med => {
+                    const card = document.createElement("div");
+                    card.style.cssText = 
+                        background:rgba(255,255,255,0.03);
+                        border:1px solid rgba(255,255,255,0.06);
+                        border-radius:10px; padding:10px 12px;
+                        margin-bottom:6px;
+                    `;
+            card.innerHTML = `
+                        <div style="font-size:13px;font-weight:700;color:#fff;
+                            margin-bottom:4px;">
+                            ${med.name || "Unknown"}
+                            ${med.composition
+                    ? `<span style="font-size:11px;color:#556;
+                                    font-weight:400;margin-left:6px;">
+                                    (${med.composition})</span>`
+                    : ""}
+                            </div>
+                            <div style="font-size:11px;color:#556;
+                                display:flex;gap:10px;flex-wrap:wrap;">
+                                ${med.dosage ? `<span>Dose: ${med.dosage}</span>` : ""}
+                                ${med.frequency ? `<span>Freq: ${med.frequency}</span>` : ""}
+                                ${med.duration ? `<span>Duration: ${med.duration}</span>` : ""}
+                                ${med.instructions ? `<span>${med.instructions}</span>` : ""}
+                            </div>
+                        `;
+            body.appendChild(card);
+        };
+
+        // Cross interactions
+        if (ints.length > 0) {
+            const intHeader = document.createElement("div");
+            intHeader.style.cssText = `
+                            font-size:11px;color:#ff9999;font-weight:700;
+                            text-transform:uppercase;letter-spacing:0.5px;
+                            margin:10px 0 6px;
+                        `;
+            intHeader.textContent = "Cross-interactions between your medicines:";
+            body.appendChild(intHeader);
+
+            ints.forEach(i => {
+                const item = document.createElement("div");
+                item.className = "int-item";
+                item.innerHTML = `
+                                <strong>${i.ingredient}</strong> +
+                                <strong>${i.conflicts_with}</strong>
+                                <span class="sev-badge sev-${i.severity}">${i.severity}</span>
+                                <br><span style="color:#cc8">${i.description}</span>
+                            `;
+                body.appendChild(item);
+            });
+        }
+
+        // WhatsApp alert for severe interactions
+        const severe = ints.filter(i => i.severity === "severe");
+        if (severe.length > 0) {
+            const alertBtn = document.createElement("button");
+            alertBtn.style.cssText = `
+                            width:100%;margin-top:10px;padding:10px;
+                            background:rgba(37,211,102,0.1);color:#25d366;
+                            border:1px solid rgba(37,211,102,0.3);
+                            border-radius:10px;font-size:12px;
+                            cursor:pointer;font-weight:700;
+                        `;
+            alertBtn.textContent = "Alert Caregiver — Severe Interaction Found";
+            const msg = `PRESCRIPTION ALERT\n\n` +
+                `Doctor: ${rx.doctor_name || "Unknown"}\n` +
+                `Medicines: ${meds.map(m => m.name).join(", ")}\n\n` +
+                severe.map(i =>
+                    `SEVERE: ${i.ingredient} + ${i.conflicts_with}\n${i.description}`
+                ).join("\n\n") +
+                `\n\nPlease consult doctor before taking these medicines together.`;
+            alertBtn.onclick = () =>
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+            body.appendChild(alertBtn);
+        }
+
+        /* ── SCAN HISTORY ── */
+        function saveToHistory(label, compositions, interactions, verdict) {
+            const history = getHistory();
+
+            const entry = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString("en-IN"),
+                medicine: label.medicine_name || "Unknown",
+                compositions: compositions || [],
+                hasWarning: verdict.has_warning || false,
+                interactions: interactions || [],
+                verdict: {
+                    line1: verdict.line1 || "",
+                    line2: verdict.line2 || "",
+                    line3: verdict.line3 || ""
+                }
+            };
+
+            history.unshift(entry); // add to front
+
+            // Keep only last 50 scans
+            if (history.length > 50) history.pop();
+
+            localStorage.setItem("ar_healthfirst_history", JSON.stringify(history));
+
+            // Update badge on history button
+            updateHistoryBadge(history.length);
+        }
+
+        function getHistory() {
+            try {
+                return JSON.parse(
+                    localStorage.getItem("ar_healthfirst_history") || "[]"
+                );
+            } catch {
+                return [];
+            }
+        }
+
+        function updateHistoryBadge(count) {
+            const btn = document.getElementById("history-toggle");
+            if (!btn) return;
+            btn.textContent = count > 0
+                ? `View Scan History (${count})`
+                : "View Scan History";
+            btn.style.color = count > 0 ? "#00e5ff" : "#445";
+        }
+
+        function renderHistory() {
+            const history = getHistory();
+            const body = document.getElementById("history-body");
+            body.innerHTML = "";
+
+            if (history.length === 0) {
+                body.innerHTML = `
+                    <div style="color:#334; font-size:12px;
+                        text-align:center; padding:20px 0;">
+                        No scans yet. Scan a medicine to see history here.
+                    </div>`;
+                return;
+            }
+
+            history.forEach(entry => {
+                const card = document.createElement("div");
+                card.style.cssText = `
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid ${entry.hasWarning
+                        ? "rgba(255,68,68,0.25)"
+                        : "rgba(0,230,118,0.2)"};
+                    border-radius: 10px; padding: 10px 12px;
+                    margin-bottom: 8px; cursor: pointer;
+                    transition: background 0.2s;
+                `;
+
+                const intCount = entry.interactions.length;
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;
+                        align-items:flex-start; margin-bottom:6px;">
+                        <div>
+                            <div style="font-size:13px; font-weight:700; color:#fff;">
+                                ${entry.medicine}
+                            </div>
+                            <div style="font-size:11px; color:#556; margin-top:2px;">
+                                ${entry.compositions.length > 0
+                        ? entry.compositions.join(", ")
+                        : "composition unknown"}
+                            </div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0; margin-left:10px;">
+                            <div style="font-size:10px; font-weight:700; padding:2px 8px;
+                                border-radius:20px;
+                                background:${entry.hasWarning
+                        ? "rgba(255,68,68,0.15)"
+                        : "rgba(0,230,118,0.15)"};
+                                color:${entry.hasWarning ? "#ff4444" : "#00e676"};
+                                border:1px solid ${entry.hasWarning
+                        ? "rgba(255,68,68,0.3)"
+                        : "rgba(0,230,118,0.3)"};">
+                                ${entry.hasWarning ? "WARNING" : "SAFE"}
+                            </div>
+                            <div style="font-size:10px; color:#334; margin-top:4px;">
+                                ${entry.timestamp}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#aaa; line-height:1.5;">
+                        ${entry.verdict.line1}
+                    </div>
+                    ${intCount > 0 ? `
+                        <div style="font-size:11px; color:#ff9999;
+                            margin-top:4px;">
+                            ${intCount} interaction${intCount > 1 ? "s" : ""} detected
+                        </div>` : ""}
+                `;
+
+                // Tap to expand full verdict
+                let expanded = false;
+                card.onclick = () => {
+                    expanded = !expanded;
+                    const extra = card.querySelector(".extra-details");
+                    if (extra) {
+                        extra.style.display = expanded ? "block" : "none";
+                        return;
+                    }
+
+                    const details = document.createElement("div");
+                    details.className = "extra-details";
+                    details.style.cssText = `
+                        margin-top:8px;
+                        padding-top:8px;
+                        border-top:1px solid rgba(255,255,255,0.06);
+                    `;
+                    details.innerHTML = `
+                        <div style="font-size:12px;color:#69f0ae;margin-bottom:4px;">
+                            ${entry.verdict.line2}
+                        </div>
+                        <div style="font-size:12px;color:#aaa;">
+                            ${entry.verdict.line3}
+                        </div>
+                        ${entry.interactions.map(i => `
+                            <div style="font-size:11px;color:#ffaaaa;
+                                margin-top:6px;padding:6px 8px;
+                                background:rgba(255,68,68,0.08);
+                                border-radius:6px;">
+                                ${i.ingredient} + ${i.conflicts_with}
+                                <span style="color:#ffaa00;margin-left:4px;">
+                                    (${i.severity})
+                                </span>
+                                <br>${i.description}
+                            </div>`).join("")}
+                    `;
+                    card.appendChild(details);
+                };
+
+                body.appendChild(card);
+            });
+        }
+
+        function exportHistory() {
+            const history = getHistory();
+
+            if (history.length === 0) {
+                alert("No scan history to export.");
+                return;
+            }
+
+            let text = "AR HEALTHFIRST — SCAN HISTORY\n";
+            text += "Generated: " + new Date().toLocaleString("en-IN") + "\n";
+            text += "=".repeat(40) + "\n\n";
+
+            history.forEach((entry, index) => {
+                text += `Scan ${index + 1} — ${entry.timestamp}\n`;
+                text += `Medicine: ${entry.medicine}\n`;
+                text += `Ingredients: ${entry.compositions.join(", ") || "unknown"}\n`;
+                text += `Status: ${entry.hasWarning ? "WARNING" : "SAFE"}\n`;
+                text += `${entry.verdict.line1}\n`;
+                text += `${entry.verdict.line2}\n`;
+                text += `${entry.verdict.line3}\n`;
+
+                if (entry.interactions.length > 0) {
+                    text += `Interactions:\n`;
+                    entry.interactions.forEach(i => {
+                        text += `  - ${i.ingredient} + ${i.conflicts_with}`;
+                        text += ` (${i.severity}): ${i.description}\n`;
+                    });
+                }
+                text += "\n";
+            });
+
+            text += "=".repeat(40) + "\n";
+            text += "This report was generated by AR HealthFirst\n";
+            text += "Powered by Amazon Nova on AWS\n";
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert("History copied to clipboard! You can paste it in WhatsApp or Notes.");
+            }).catch(() => {
+                // Fallback for mobile
+                const blob = new Blob([text], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "ar_healthfirst_history.txt";
+                a.click();
+            });
+        }
+
+        function clearHistory() {
+            if (!confirm("Clear all scan history? This cannot be undone.")) return;
+            localStorage.removeItem("ar_healthfirst_history");
+            renderHistory();
+            updateHistoryBadge(0);
+        }
+
+        function toggleHistory() {
+            const panel = document.getElementById("history-panel");
+            const btn = document.getElementById("history-toggle");
+            const open = panel.style.display !== "none";
+            panel.style.display = open ? "none" : "block";
+
+            const count = getHistory().length;
+            if (open) {
+                btn.textContent = count > 0
+                    ? `View Scan History (${count})`
+                    : "View Scan History";
+                btn.style.color = count > 0 ? "#00e5ff" : "#445";
+            } else {
+                btn.textContent = "Hide Scan History";
+                btn.style.color = "#00e5ff";
+                renderHistory();
+            }
+        }
+
+        // Load history badge on startup
+        updateHistoryBadge(getHistory().length);
+
+    </script>
+</body>
+
+</html>

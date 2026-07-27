@@ -1,0 +1,18 @@
+drug_a,drug_b,severity,description
+metformin,alcohol,moderate,May cause dangerous lactic acidosis
+aspirin,warfarin,severe,Greatly increases bleeding risk - avoid combination
+paracetamol,alcohol,moderate,Increases liver stress significantly
+amlodipine,simvastatin,moderate,Increases statin concentration in blood
+metoprolol,verapamil,severe,Can cause dangerous drop in heart rate
+ibuprofen,aspirin,moderate,Combined use increases stomach bleeding risk
+warfarin,ibuprofen,severe,Significantly increases bleeding risk
+metformin,ibuprofen,moderate,May reduce kidney function
+paracetamol,warfarin,moderate,May enhance blood thinning effect
+amlodipine,metoprolol,moderate,May cause excessive blood pressure drop
+calpol,alcohol,moderate,Paracetamol with alcohol increases liver damage risk
+calpol,warfarin,moderate,May enhance anticoagulant effect
+metronidazole,alcohol,severe,Causes severe nausea vomiting and flushing
+metronidazole,warfarin,severe,Greatly increases bleeding risk
+metronidazole,lithium,moderate,Increases lithium toxicity risk
+metronidazole,phenytoin,moderate,Increases phenytoin levels dangerously
+metronidazole,metformin,moderate,May increase metformin side effects
