@@ -56,6 +56,6 @@ uvicorn main:app --reload --port 8000
 ```
 
 ## Team
-- Saketh Ram — ML pipeline, data science, backend
+- Akshay — ML pipeline, data science, backend
 - Sailesh — Cloud, Nova API integration
 - Kaarthikeya — Security, DevOps, frontend
